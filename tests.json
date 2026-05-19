@@ -1,4 +1,5 @@
 {
+  "categories": ["Listening", "Reading", "Writing", "Speaking"],
   "tests": [
     {
       "title": "Mocklab Essential Test 5",
@@ -6,6 +7,42 @@
       "url": "https://maqsudjon-cell.github.io/mocklabtest5listening/mocklab-essential-test5-listening.html",
       "date": "2026-05-19",
       "difficulty": "Band 6-7"
+    },
+    {
+      "title": "Full Listening Practice Test",
+      "category": "Listening",
+      "url": "https://maqsudjon-cell.github.io/ctn/1listening-test.html",
+      "date": "2026-05-19"
+    },
+    {
+      "title": "Trainer 2 Test 3 Listening",
+      "category": "Listening",
+      "url": "https://maqsudjon-cell.github.io/3ctn/trainer2-test3-listening.html",
+      "date": "2026-05-19"
+    },
+    {
+      "title": "Trainer 2 Test 4 Listening",
+      "category": "Listening",
+      "url": "https://maqsudjon-cell.github.io/ctnb/trainer2-test4-listening.html",
+      "date": "2026-05-19"
+    },
+    {
+      "title": "Trainer 2 Test 5 Listening",
+      "category": "Listening",
+      "url": "https://maqsudjon-cell.github.io/ctna5/trainer2-test5-listening.html",
+      "date": "2026-05-19"
+    },
+    {
+      "title": "C20T1 Full Reading Test",
+      "category": "Reading",
+      "url": "https://maqsudjon-cell.github.io/c20t1readingfull/c20.t1.reading.full.html",
+      "date": "2026-05-19"
+    },
+    {
+      "title": "A2 Manatees Reading",
+      "category": "Reading",
+      "url": "https://maqsudjon-cell.github.io/a2/ielts-manatees-a2.html",
+      "date": "2026-05-19"
     }
   ]
 }

@@ -754,10 +754,14 @@
         }
         const da = a.date || '';
         const db = b.date || '';
-        if (sort === 'oldest') return da.localeCompare(db);
-        return db.localeCompare(da);
+        if (sort === 'oldest') return da.localeCompare(db) || extractNum(a.title) - extractNum(b.title);
+        return db.localeCompare(da) || extractNum(a.title) - extractNum(b.title);
       });
       return arr;
+    }
+    function extractNum(t) {
+      var m = (t || '').match(/\d+/);
+      return m ? parseInt(m[0], 10) : 0;
     }
 
     function countByCategory(cat) {

@@ -793,16 +793,17 @@
           '</button>'
         );
       }).join('');
-      // Use event delegation instead of per-button listeners
-      pills.addEventListener('click', function onPillClick(e) {
-        const btn = e.target.closest('.pill');
-        if (!btn) return;
-        const cat = btn.dataset.cat;
-        if (cat === state.activeCategory) return;
-        state.activeCategory = cat;
-        renderPills();
-        render();
-      });
+    }
+
+    // Event delegation: only register once, outside renderPills
+    function onPillClick(e) {
+      const btn = e.target.closest('.pill');
+      if (!btn) return;
+      const cat = btn.dataset.cat;
+      if (cat === state.activeCategory) return;
+      state.activeCategory = cat;
+      renderPills();
+      render();
     }
 
     function renderTotalLine() {
@@ -913,6 +914,9 @@
     }
 
     // ─────────── Events ───────────
+    // Register pill click delegation once
+    document.getElementById('pills').addEventListener('click', onPillClick);
+
     const searchInput = document.getElementById('search');
     const onSearch = debounce(value => {
       state.search = value;

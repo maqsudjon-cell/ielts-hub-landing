@@ -124,16 +124,28 @@
   }
 
   function init() {
-    // Check once in case the modal somehow opened before this ran
+    // Check once in case the result is already on screen
     maybeSend();
 
-    var lastCheck = 0;
-    var observer = new MutationObserver(function () {
-      // Cheap throttle — DOM mutations during typing can fire fast
-      var now = Date.now();
-      if (now - lastCheck < 80) return;
-      lastCheck = now;
-      maybeSend();
+    var observer, poll, stopTimer;
+    function stopAll() {
+      if (observer) observer.disconnect();
+      if (poll) clearInterval(poll);
+      if (stopTimer) clearTimeout(stopTimer);
+    }
+
+    // Trailing debounce: every mutation (re)schedules a check ~40ms after the
+    // DOM settles. Unlike a drop-throttle this never loses the critical
+    // showResults() mutation, so detection is effectively instant.
+    var debTimer = null;
+    observer = new MutationObserver(function () {
+      if (sent) { stopAll(); return; }
+      if (debTimer) return;
+      debTimer = setTimeout(function () {
+        debTimer = null;
+        maybeSend();
+        if (sent) stopAll();
+      }, 40);
     });
     observer.observe(document.documentElement, {
       childList: true,
@@ -142,8 +154,15 @@
       attributeFilter: ['class', 'style', 'open']
     });
 
-    // Stop observing after 60 min — nobody's still on the page that long
-    setTimeout(function () { observer.disconnect(); }, 60 * 60 * 1000);
+    // Safety net: a very cheap poll (a few querySelectors) guarantees the score
+    // is picked up within ~300ms even if some page swallows mutation events.
+    poll = setInterval(function () {
+      maybeSend();
+      if (sent) stopAll();
+    }, 300);
+
+    // Give up after 60 min — nobody's still on the page that long.
+    stopTimer = setTimeout(stopAll, 60 * 60 * 1000);
   }
 
   if (document.readyState === 'loading') {

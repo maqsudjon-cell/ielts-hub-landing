@@ -363,12 +363,19 @@
       return Promise.resolve(false);
     }
 
+    // Show confirmation immediately — don't make the student wait on the network.
+    // The write happens server-side, and a no-cors response is opaque (unreadable)
+    // anyway, so there's nothing to wait for. Apps Script cold starts can add
+    // several seconds to the round-trip; firing the toast now keeps it instant.
+    toast('Result saved ✓', false);
+
     // IMPORTANT: mode 'no-cors' is required for Apps Script.
     // Apps Script answers a POST with a 302 redirect to googleusercontent.com,
     // which sends no CORS headers — in default ('cors') mode the browser blocks
     // that redirect and the fetch rejects even though the row was written.
-    // 'no-cors' sends a simple request (text/plain is safelisted, no preflight),
-    // the row is written, and we get an opaque response we simply treat as success.
+    // 'no-cors' sends a simple request (text/plain is safelisted, no preflight)
+    // and the row is written. Fire-and-forget: keepalive lets it complete even
+    // if the page navigates away right after submit.
     return fetch(WEB_APP_URL, {
       method:  'POST',
       mode:    'no-cors',
@@ -376,12 +383,9 @@
       body:    JSON.stringify(data),
       keepalive: true
     }).then(function () {
-      // Opaque response: status is unreadable by design, but the write has happened.
-      toast('Result saved ✓', false);
       return true;
     }).catch(function (err) {
       console.warn('[IELTS Tracker] send failed:', err);
-      toast('Could not save result', true);
       return false;
     });
   }

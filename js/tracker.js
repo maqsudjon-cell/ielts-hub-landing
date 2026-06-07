@@ -113,34 +113,54 @@
     '.ih-tracker-btn:active{transform:translateY(0);filter:brightness(0.96);}',
     '.ih-tracker-btn:focus-visible{outline:2px solid #fff;outline-offset:3px;}',
 
-    /* Change-name pill — bottom-right to avoid clashing with test-page top headers (timer, fullscreen, menu) */
+    /* Account chip — collapses to a small avatar at top-left so it never covers',
+       a test page\'s timer/menu (top-right) or question nav (bottom). Expands',
+       to "Hi, {name} · Change" on hover (desktop) or tap (touch). */
     '#ih-tracker-pill{',
-    '  position:fixed;bottom:16px;right:16px;z-index:2147483500;',
-    '  display:inline-flex;align-items:center;gap:8px;',
-    '  padding:8px 6px 8px 14px;',
-    '  background:rgba(15,23,42,0.6);',
+    '  position:fixed;top:10px;left:10px;z-index:2147483500;',
+    '  display:inline-flex;align-items:center;',
+    '  height:40px;padding:4px;',
+    '  background:rgba(15,23,42,0.55);',
     '  backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);',
     '  border:1px solid var(--ih-border);',
     '  border-radius:999px;',
     '  color:var(--ih-text);font-size:13px;line-height:1;',
-    '  box-shadow:0 8px 20px rgba(0,0,0,0.25);',
-    '  opacity:0.72;',
-    '  transition:opacity 220ms ease,transform 220ms ease,box-shadow 220ms ease;',
+    '  box-shadow:0 6px 16px rgba(0,0,0,0.22);',
+    '  opacity:0.6;',
+    '  transition:opacity 200ms ease,box-shadow 200ms ease;',
     '}',
-    '#ih-tracker-pill:hover{opacity:1;transform:translateY(-1px);box-shadow:0 12px 26px rgba(0,0,0,0.35);}',
+    '#ih-tracker-pill:hover,#ih-tracker-pill.is-open{opacity:1;box-shadow:0 10px 24px rgba(0,0,0,0.32);}',
+    /* Avatar (always visible) */
+    '#ih-tracker-pill .ih-pill-avatar{',
+    '  flex:0 0 auto;width:32px;height:32px;border-radius:50%;',
+    '  display:inline-flex;align-items:center;justify-content:center;',
+    '  background:linear-gradient(135deg,#2AABEE 0%,#0088cc 100%);',
+    '  color:#fff;font:600 14px Inter,sans-serif;text-transform:uppercase;',
+    '  cursor:pointer;border:none;padding:0;',
+    '}',
+    '#ih-tracker-pill .ih-pill-avatar:focus-visible{outline:2px solid #fff;outline-offset:2px;}',
+    /* Collapsible body — hidden by default, revealed on hover/open */
+    '#ih-tracker-pill .ih-pill-body{',
+    '  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;',
+    '  max-width:0;overflow:hidden;opacity:0;',
+    '  transition:max-width 240ms cubic-bezier(0.4,0,0.2,1),opacity 200ms ease,padding 240ms ease;',
+    '  padding:0;',
+    '}',
+    '#ih-tracker-pill:hover .ih-pill-body,#ih-tracker-pill.is-open .ih-pill-body{',
+    '  max-width:240px;opacity:1;padding:0 8px 0 8px;',
+    '}',
     '#ih-tracker-pill .ih-pill-greet{color:var(--ih-muted);}',
     '#ih-tracker-pill .ih-pill-name{font-weight:600;}',
+    '#ih-tracker-pill .ih-pill-sep{color:var(--ih-muted);opacity:0.5;}',
     '#ih-tracker-pill .ih-pill-change{',
     '  display:inline-flex;align-items:center;justify-content:center;',
     '  background:none;border:none;cursor:pointer;',
     '  color:var(--ih-accent-2);font:500 12px Inter,sans-serif;',
-    '  padding:6px 10px;margin-left:2px;',
-    '  border-radius:999px;min-height:32px;',
+    '  padding:6px 8px;border-radius:999px;min-height:30px;',
     '  transition:background-color 180ms ease,color 180ms ease;',
     '}',
     '#ih-tracker-pill .ih-pill-change:hover{background:rgba(0,136,204,0.18);color:#7ec8ed;}',
     '#ih-tracker-pill .ih-pill-change:focus-visible{outline:2px solid var(--ih-accent-2);outline-offset:2px;}',
-    '#ih-tracker-pill .ih-pill-sep{color:var(--ih-muted);opacity:0.5;}',
 
     /* Toast (non-blocking confirmation) */
     '.ih-tracker-toast{',
@@ -163,7 +183,7 @@
     '@media (max-width:480px){',
     '  .ih-tracker-card{padding:24px;border-radius:18px;}',
     '  .ih-tracker-card h2{font-size:22px;}',
-    '  #ih-tracker-pill{bottom:12px;right:12px;font-size:12px;padding:6px 4px 6px 12px;}',
+    '  #ih-tracker-pill{top:8px;left:8px;font-size:12px;}',
     '}',
 
     /* Reduced motion */
@@ -272,14 +292,27 @@
       pill = document.createElement('div');
       pill.id = PILL_ID;
       pill.innerHTML =
-        '<span class="ih-pill-greet">Hi,</span> ' +
-        '<span class="ih-pill-name"></span>' +
-        '<span class="ih-pill-sep">·</span>' +
-        '<button type="button" class="ih-pill-change" aria-label="Change name">Change</button>';
+        '<button type="button" class="ih-pill-avatar" aria-label="Account — tap to change name"></button>' +
+        '<div class="ih-pill-body">' +
+          '<span class="ih-pill-greet">Hi,</span>' +
+          '<span class="ih-pill-name"></span>' +
+          '<span class="ih-pill-sep">·</span>' +
+          '<button type="button" class="ih-pill-change" aria-label="Change name">Change</button>' +
+        '</div>';
+      // Avatar toggles the expanded state (needed for touch where there is no hover)
+      pill.querySelector('.ih-pill-avatar').addEventListener('click', function (e) {
+        e.stopPropagation();
+        pill.classList.toggle('is-open');
+      });
       pill.querySelector('.ih-pill-change').addEventListener('click', changeName);
+      // Tap anywhere else collapses it again
+      document.addEventListener('click', function (e) {
+        if (!pill.contains(e.target)) pill.classList.remove('is-open');
+      });
       document.body.appendChild(pill);
     }
     pill.querySelector('.ih-pill-name').textContent = name;
+    pill.querySelector('.ih-pill-avatar').textContent = name.charAt(0);
   }
 
   function changeName() {

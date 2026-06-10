@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IELTS Practice Hub — STAGING</title>
-  <meta name="description" content="A curated hub of IELTS practice tests across Listening, Reading, Writing, and Speaking." />
+  <title>Pangea8 — Free IELTS Mock Tests with the Real Exam Interface</title>
+  <meta name="description" content="90+ free IELTS mock tests in the authentic computer-based interface. Instant band scores, answer review, and a personal progress dashboard." />
   <meta name="theme-color" content="#FAFAF9" />
 
-  <meta property="og:title" content="IELTS Practice Hub" />
-  <meta property="og:description" content="Curated mock tests for Listening, Reading, Writing, and Speaking." />
+  <meta property="og:title" content="Pangea8 — Free IELTS Mock Tests" />
+  <meta property="og:description" content="Practice IELTS like it's the real exam: 90+ free mocks, instant band scores, progress tracking." />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
 
@@ -30,6 +30,9 @@
       }
     })();
   </script>
+
+  <script>window.IH_AUTH_MODE = 'manual';</script>
+  <script src="js/firebase-init.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -598,12 +601,279 @@
 
     /* ─────────── Misc ─────────── */
     ::selection { background: var(--accent-soft); color: var(--accent); }
+
+    /* ─────────── Boot loader ─────────── */
+    .boot {
+      position: fixed; inset: 0; z-index: 80;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
+    }
+    .boot .spinner {
+      width: 22px; height: 22px;
+      border: 2.5px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+
+    /* ─────────── Hero actions / account chip ─────────── */
+    .hero-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .account { position: relative; }
+    .account-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 44px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--surface); color: var(--text);
+      transition: all var(--t-base) var(--ease);
+    }
+    .account-btn:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+    .account-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+    .account-avatar {
+      width: 26px; height: 26px; border-radius: 50%; overflow: hidden;
+      background: var(--accent-soft); color: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; text-transform: uppercase; flex-shrink: 0;
+    }
+    .account-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .account-name {
+      font-size: 13px; font-weight: 500; max-width: 120px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    @media (max-width: 560px) { .account-name { display: none; } }
+    .account-menu {
+      position: absolute; right: 0; top: calc(100% + 8px); min-width: 170px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow-card-hover);
+      padding: 6px; z-index: 50;
+    }
+    .account-menu a, .account-menu button {
+      display: block; width: 100%; text-align: left;
+      padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      color: var(--text); background: none; border: none; cursor: pointer;
+    }
+    .account-menu a:hover, .account-menu button:hover { background: var(--surface-hover); }
+    .account-menu .signout { color: #DC2626; }
+    [data-theme="dark"] .account-menu .signout { color: #F87171; }
+
+    /* ─────────── Landing page ─────────── */
+    #landing { min-height: 100vh; }
+    .lp-nav {
+      position: sticky; top: 0; z-index: 30;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .lp-nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .lp-logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .lp-logo .lp-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+    .lp-logo .lp-logo-sub { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+    @media (max-width: 560px) { .lp-logo .lp-logo-sub { display: none; } }
+
+    .lp-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      height: 52px; padding: 0 22px; border-radius: 14px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      border: 1px solid var(--border); transition: all var(--t-base) var(--ease);
+      white-space: nowrap;
+    }
+    .lp-btn-google { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .lp-btn-google:hover { transform: translateY(-1px); opacity: 0.92; }
+    .lp-btn-ghost { background: var(--surface); color: var(--text); }
+    .lp-btn-ghost:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+    .lp-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+    .lp-btn-sm { height: 40px; padding: 0 16px; font-size: 13.5px; border-radius: 11px; }
+    .lp-btn .gicon { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .lp-hero {
+      max-width: 1100px; margin: 0 auto; padding: 64px 24px 56px;
+      display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center;
+    }
+    @media (max-width: 880px) { .lp-hero { grid-template-columns: 1fr; padding-top: 44px; } }
+    .lp-h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.08; }
+    @media (min-width: 768px) { .lp-h1 { font-size: 54px; } }
+    .lp-h1 .accent { color: var(--accent); }
+    .lp-sub { margin-top: 16px; color: var(--muted); font-size: 16.5px; line-height: 1.65; max-width: 540px; }
+    .lp-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+    .lp-auth-msg { margin-top: 14px; font-size: 13.5px; color: #DC2626; }
+    [data-theme="dark"] .lp-auth-msg { color: #F87171; }
+    .lp-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
+    .lp-stat {
+      font-size: 12.5px; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 5px 13px; background: var(--surface); font-feature-settings: 'tnum';
+    }
+    .lp-stat strong { color: var(--text); font-weight: 600; }
+
+    .lp-visual { position: relative; min-height: 360px; }
+    @media (max-width: 880px) { .lp-visual { display: none; } }
+    .lp-card {
+      position: absolute; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 16px;
+      box-shadow: var(--shadow-card-hover); padding: 20px;
+    }
+    .lp-card-main { top: 6%; left: 0; right: 16%; }
+    .lp-fake-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
+    .lp-fake-head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat-listening); }
+    .lp-audio { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .lp-audio-btn {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 11px;
+    }
+    .lp-audio-track { flex: 1; height: 5px; border-radius: 999px; background: var(--border); position: relative; overflow: hidden; }
+    .lp-audio-track i { position: absolute; left: 0; top: 0; bottom: 0; width: 56%; background: var(--accent); border-radius: 999px; }
+    .lp-audio-time { font-size: 11.5px; color: var(--muted); font-feature-settings: 'tnum'; }
+    .lp-q { font-size: 13.5px; line-height: 1.5; margin-bottom: 12px; color: var(--text); }
+    .lp-q .blank {
+      display: inline-block; min-width: 90px; height: 26px; vertical-align: middle;
+      border: 1px solid var(--border-strong); border-radius: 7px; background: var(--bg);
+      margin-left: 6px; padding: 2px 8px; font-size: 12.5px; color: var(--accent); font-weight: 600;
+    }
+    .lp-card-band { bottom: 4%; right: 0; width: 190px; text-align: center; animation: lp-float 6s ease-in-out infinite; }
+    .lp-band-num { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; color: var(--accent); line-height: 1; }
+    .lp-band-label { font-size: 13px; font-weight: 600; margin-top: 6px; }
+    .lp-band-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    @keyframes lp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @media (prefers-reduced-motion: reduce) { .lp-card-band { animation: none; } }
+
+    .lp-section { max-width: 1100px; margin: 0 auto; padding: 52px 24px; }
+    .lp-section > h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 6px; }
+    .lp-section > .lp-section-sub { color: var(--muted); font-size: 15px; margin-bottom: 28px; max-width: 560px; }
+    .lp-grid { display: grid; gap: 16px; }
+    .lp-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .lp-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 880px) { .lp-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .lp-grid.cols-3, .lp-grid.cols-4 { grid-template-columns: 1fr; } }
+    .lp-tile {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px; box-shadow: var(--shadow-card);
+    }
+    .lp-tile .num {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--accent-soft); color: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 13px; margin-bottom: 14px; font-feature-settings: 'tnum';
+    }
+    .lp-tile h3 { font-size: 15px; font-weight: 600; margin-bottom: 5px; letter-spacing: -0.01em; }
+    .lp-tile p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+    .lp-faq details {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0 18px; margin-bottom: 10px;
+    }
+    .lp-faq summary {
+      padding: 15px 0; font-weight: 600; font-size: 14px; cursor: pointer;
+      list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .lp-faq summary::-webkit-details-marker { display: none; }
+    .lp-faq summary::after { content: '+'; color: var(--muted); font-size: 17px; font-weight: 500; }
+    .lp-faq details[open] summary::after { content: '−'; }
+    .lp-faq details p { padding: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    .lp-final { max-width: 1100px; margin: 0 auto; padding: 28px 24px 84px; text-align: center; }
+    .lp-final h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; }
+    .lp-final p { color: var(--muted); font-size: 15px; margin-top: 8px; }
+    .lp-final .lp-cta-row { justify-content: center; }
+    .lp-final .tg-link { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); }
+    .lp-final .tg-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
 
-  <div class="container">
+  <div class="boot" id="boot" aria-hidden="true"><div class="spinner"></div></div>
+
+  <!-- ───────────── Landing (signed-out visitors) ───────────── -->
+  <section id="landing" hidden>
+    <nav class="lp-nav">
+      <div class="lp-nav-inner">
+        <span class="lp-logo"><span class="lp-logo-dot"></span>Pangea8<span class="lp-logo-sub">· IELTS Practice Hub</span></span>
+        <button class="lp-btn lp-btn-ghost lp-btn-sm" type="button" data-auth="google">Sign in</button>
+      </div>
+    </nav>
+
+    <div class="lp-hero">
+      <div>
+        <span class="kicker">Free IELTS practice</span>
+        <h1 class="lp-h1">Practice IELTS like it's <span class="accent">the real exam</span></h1>
+        <p class="lp-sub">90+ full mock tests in the authentic computer-based interface — instant band scores, answer review, and a personal progress dashboard. Built by an IELTS tutor. Free for every student.</p>
+        <div class="lp-cta-row">
+          <button class="lp-btn lp-btn-google" type="button" data-auth="google">
+            <svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.31 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+            Continue with Google
+          </button>
+          <button class="lp-btn lp-btn-ghost" type="button" data-auth="guest">Try as guest →</button>
+        </div>
+        <p class="lp-auth-msg" id="authMsg" hidden></p>
+        <div class="lp-stats">
+          <span class="lp-stat"><strong id="statTests">90+</strong> mock tests</span>
+          <span class="lp-stat"><strong id="statListening">70+</strong> Listening</span>
+          <span class="lp-stat"><strong id="statReading">16</strong> Reading</span>
+          <span class="lp-stat"><strong>100%</strong> free</span>
+        </div>
+      </div>
+
+      <div class="lp-visual" aria-hidden="true">
+        <div class="lp-card lp-card-main">
+          <div class="lp-fake-head"><span class="dot"></span> Listening · Section 2</div>
+          <div class="lp-audio"><span class="lp-audio-btn">▶</span><span class="lp-audio-track"><i></i></span><span class="lp-audio-time">12:36</span></div>
+          <p class="lp-q">14. The visitor centre closes at<span class="blank">5.30 pm</span></p>
+          <p class="lp-q">15. Tickets for students cost<span class="blank">£4.50</span></p>
+          <p class="lp-q">16. The tour begins at the<span class="blank">main gate</span></p>
+        </div>
+        <div class="lp-card lp-card-band">
+          <div class="lp-band-num">7.5</div>
+          <div class="lp-band-label">Band score · 32/40</div>
+          <div class="lp-band-sub">saved to your dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lp-section">
+      <h2>How it works</h2>
+      <p class="lp-section-sub">From zero to your first band score in under a minute.</p>
+      <div class="lp-grid cols-3">
+        <div class="lp-tile"><span class="num">1</span><h3>Sign in free</h3><p>Use Google so your results follow you on any device — or jump in as a guest.</p></div>
+        <div class="lp-tile"><span class="num">2</span><h3>Pick a mock test</h3><p>The real computer-based exam screen: timer, audio player, and question palette.</p></div>
+        <div class="lp-tile"><span class="num">3</span><h3>Get your band instantly</h3><p>Auto-marked answers, a band estimate, and every attempt saved to your dashboard.</p></div>
+      </div>
+    </div>
+
+    <div class="lp-section">
+      <h2>Why students practice here</h2>
+      <p class="lp-section-sub">Everything you need to walk into the exam already knowing the screen.</p>
+      <div class="lp-grid cols-4">
+        <div class="lp-tile"><h3>Real exam interface</h3><p>Screens that look and behave exactly like the official CD-IELTS test.</p></div>
+        <div class="lp-tile"><h3>Instant band scores</h3><p>Standard conversion tables mark your test the second you submit.</p></div>
+        <div class="lp-tile"><h3>Progress dashboard</h3><p>Average, best, and score history — watch your band grow week by week.</p></div>
+        <div class="lp-tile"><h3>Built by a tutor</h3><p>Curated by an IELTS teacher and used by real students every day.</p></div>
+      </div>
+    </div>
+
+    <div class="lp-section lp-faq">
+      <h2>Questions, answered</h2>
+      <p class="lp-section-sub">The short version of everything students ask.</p>
+      <details><summary>Is it really free?</summary><p>Yes — every mock test, the band calculator, and your results dashboard are completely free. No trials, no paywalls.</p></details>
+      <details><summary>Do I need an account?</summary><p>Sign in with Google and your results follow you on any device. Prefer not to? Continue as a guest — your scores are saved on this device.</p></details>
+      <details><summary>Which skills can I practice?</summary><p>70+ Listening mocks and a growing Reading collection, plus tools like the band score calculator. Writing and Speaking resources are on the way.</p></details>
+      <details><summary>Are the band scores official?</summary><p>They're accurate estimates based on the standard conversion tables — perfect for tracking progress, though only the real exam gives an official band.</p></details>
+    </div>
+
+    <div class="lp-final">
+      <h2>Start practicing in 10 seconds</h2>
+      <p>Your first mock test is one click away.</p>
+      <div class="lp-cta-row">
+        <button class="lp-btn lp-btn-google" type="button" data-auth="google">
+          <svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.31 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+          Continue with Google
+        </button>
+        <button class="lp-btn lp-btn-ghost" type="button" data-auth="guest">Try as guest →</button>
+      </div>
+      <a class="tg-link" href="https://t.me/pangea8" target="_blank" rel="noopener">or join our Telegram channel @pangea8</a>
+    </div>
+  </section>
+
+  <!-- ───────────── Practice hub (after sign-in) ───────────── -->
+  <div class="container" id="hubApp" hidden>
     <header class="hero">
       <div class="hero-text">
         <span class="kicker">IELTS · Practice</span>
@@ -611,15 +881,29 @@
         <p class="subtitle">Curated mock tests &amp; tools for IELTS practice — Listening, Reading, Writing, Speaking, and more.</p>
       </div>
 
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
-        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-        </svg>
-        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      </button>
+      <div class="hero-actions">
+        <div class="account" id="account" hidden>
+          <button class="account-btn" id="accountBtn" type="button" aria-haspopup="true" aria-expanded="false">
+            <span class="account-avatar" id="accountAvatar"></span>
+            <span class="account-name" id="accountName"></span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="account-menu" id="accountMenu" hidden>
+            <a href="me.html">My results</a>
+            <button type="button" class="signout" id="signOutBtn">Sign out</button>
+          </div>
+        </div>
+
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <div class="search-wrap">
@@ -953,6 +1237,135 @@
 
     applyTheme(document.documentElement.dataset.theme || 'light');
     loadData();
+  </script>
+
+  <!-- ───────────── Auth gate: landing ⇄ hub ───────────── -->
+  <script>
+    (function () {
+      'use strict';
+
+      var boot    = document.getElementById('boot');
+      var landing = document.getElementById('landing');
+      var hubApp  = document.getElementById('hubApp');
+      var account = document.getElementById('account');
+      var decided = false;
+
+      function showLanding() {
+        decided = true;
+        boot.hidden = true;
+        hubApp.hidden = true;
+        landing.hidden = false;
+      }
+
+      function showHub(user) {
+        decided = true;
+        boot.hidden = true;
+        landing.hidden = true;
+        hubApp.hidden = false;
+        renderAccount(user);
+      }
+
+      function renderAccount(user) {
+        if (!user) { account.hidden = true; return; }
+        account.hidden = false;
+        var name = user.isAnonymous ? 'Guest' : (user.displayName || user.email || 'Student');
+        document.getElementById('accountName').textContent = name;
+        var avatar = document.getElementById('accountAvatar');
+        avatar.textContent = '';
+        if (user.photoURL) {
+          var img = document.createElement('img');
+          img.src = user.photoURL;
+          img.alt = '';
+          img.referrerPolicy = 'no-referrer';
+          avatar.appendChild(img);
+        } else {
+          avatar.textContent = name.charAt(0);
+        }
+      }
+
+      function authError(err) {
+        var code = (err && err.code) || (err && err.message) || 'unknown';
+        var msg;
+        if (code === 'auth/unauthorized-domain') {
+          msg = 'Google sign-in is not authorized for this domain yet — continue as guest for now.';
+        } else if (code === 'auth/operation-not-allowed') {
+          msg = 'This sign-in method is disabled in the Firebase console.';
+        } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+          msg = 'The sign-in window was closed before finishing — try again.';
+        } else if (code === 'auth/network-request-failed' || code === 'firebase-unavailable') {
+          msg = 'Network problem — check your connection and try again.';
+        } else {
+          msg = 'Sign-in failed (' + code + ') — try again or continue as guest.';
+        }
+        var el = document.getElementById('authMsg');
+        el.textContent = msg;
+        el.hidden = false;
+        console.warn('[Auth gate]', code, err);
+      }
+
+      // Never lock students out: if Firebase can't load at all, fail open
+      // straight into the hub.
+      setTimeout(function () { if (!decided) showHub(null); }, 8000);
+
+      if (!window.IHFirebase) { showHub(null); return; }
+
+      window.IHFirebase.ready.then(function (fb) {
+        if (!fb) { showHub(null); return; }
+
+        fb.auth.onAuthStateChanged(function (user) {
+          if (user) { showHub(user); } else { showLanding(); }
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll('[data-auth="google"]'), function (btn) {
+          btn.addEventListener('click', function () {
+            document.getElementById('authMsg').hidden = true;
+            window.IHFirebase.signInWithGoogle().catch(authError);
+          });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-auth="guest"]'), function (btn) {
+          btn.addEventListener('click', function () {
+            document.getElementById('authMsg').hidden = true;
+            window.IHFirebase.signInAsGuest().catch(authError);
+          });
+        });
+
+        var accountBtn = document.getElementById('accountBtn');
+        var menu = document.getElementById('accountMenu');
+        accountBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          menu.hidden = !menu.hidden;
+          accountBtn.setAttribute('aria-expanded', String(!menu.hidden));
+        });
+        document.addEventListener('click', function (e) {
+          if (!menu.hidden && !account.contains(e.target)) {
+            menu.hidden = true;
+            accountBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !menu.hidden) {
+            menu.hidden = true;
+            accountBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+        document.getElementById('signOutBtn').addEventListener('click', function () {
+          menu.hidden = true;
+          window.IHFirebase.signOut();
+        });
+      });
+
+      // Live stats on the landing hero (graceful: static fallbacks remain).
+      fetch('tests.json').then(function (r) { return r.json(); }).then(function (data) {
+        var tests = Array.isArray(data.tests) ? data.tests : [];
+        if (!tests.length) return;
+        var count = function (cat) {
+          return tests.filter(function (t) { return t.category === cat; }).length;
+        };
+        document.getElementById('statTests').textContent = tests.length;
+        document.getElementById('statListening').textContent = count('Listening');
+        document.getElementById('statReading').textContent = count('Reading');
+      }).catch(function () {});
+    })();
   </script>
 
   <!-- Contact / Telegram footer (auto-injected, same script used on test pages) -->

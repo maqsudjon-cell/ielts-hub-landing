@@ -163,6 +163,7 @@
     </main>
   </div>
 
+  <script>window.IH_AUTH_MODE = 'manual';</script>
   <script src="js/firebase-init.js" defer></script>
   <script>
     'use strict';
@@ -269,13 +270,6 @@
     }
 
     function load() {
-      var uid = resolveUid();
-      if (!uid) {
-        showEmpty('No student linked on this device',
-          'Open any test on the hub, tap your avatar in the top-left corner, and choose <strong>My results</strong> — that link brings you here with your history attached.');
-        return;
-      }
-
       if (!window.IHFirebase) {
         showEmpty('Could not load', 'The results service did not load. Please refresh and try again.');
         return;
@@ -285,6 +279,14 @@
         if (!fb) {
           showEmpty('Results unavailable',
             'Could not reach the results database. Check your connection and refresh.');
+          return;
+        }
+
+        // uid sources: ?uid= link (from a test page) → signed-in account → last used on this device
+        var uid = resolveUid() || (fb.user ? fb.user.uid : '');
+        if (!uid) {
+          showEmpty('No student linked on this device',
+            'Sign in on the <a href="./" style="color:var(--accent)">home page</a> — or open any test, tap your avatar, and choose <strong>My results</strong>.');
           return;
         }
 

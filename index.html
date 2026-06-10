@@ -1250,11 +1250,19 @@
       var account = document.getElementById('account');
       var decided = false;
 
+      // Optimistic first paint: returning signed-in students keep the boot
+      // spinner (the hub is coming); everyone else sees the landing instantly
+      // instead of waiting for Firebase to load.
+      var expectUser = false;
+      try { expectUser = localStorage.getItem('ih_auth_hint') === '1'; } catch (e) {}
+      if (!expectUser) { boot.hidden = true; landing.hidden = false; }
+
       function showLanding() {
         decided = true;
         boot.hidden = true;
         hubApp.hidden = true;
         landing.hidden = false;
+        try { localStorage.removeItem('ih_auth_hint'); } catch (e) {}
       }
 
       function showHub(user) {
@@ -1263,6 +1271,7 @@
         landing.hidden = true;
         hubApp.hidden = false;
         renderAccount(user);
+        if (user) { try { localStorage.setItem('ih_auth_hint', '1'); } catch (e) {} }
       }
 
       function renderAccount(user) {
@@ -1307,6 +1316,8 @@
       // straight into the hub.
       setTimeout(function () { if (!decided) showHub(null); }, 8000);
 
+      function start() {
+      // firebase-init.js is deferred, so it has executed by DOMContentLoaded.
       if (!window.IHFirebase) { showHub(null); return; }
 
       window.IHFirebase.ready.then(function (fb) {
@@ -1353,6 +1364,12 @@
           window.IHFirebase.signOut();
         });
       });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+      } else {
+        start();
+      }
 
       // Live stats on the landing hero (graceful: static fallbacks remain).
       fetch('tests.json').then(function (r) { return r.json(); }).then(function (data) {

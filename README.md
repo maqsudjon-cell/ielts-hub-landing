@@ -1,4 +1,13 @@
-# IELTS Practice Hub
+# IELTS Practice Hub — STAGING
+
+> ⚠️ **This is the staging copy of [ielts-hub](https://github.com/maqsudjon-cell/ielts-hub) (pangea8.com).**
+> New features are built and tested here first, then promoted to production.
+> Staging never writes to the production Google Sheet (tracker.js detects the
+> environment automatically). Firebase (Auth + Firestore) is shared with
+> production — the `ieltshub` project.
+>
+> **Staging site:** https://maqsudjon-cell.github.io/ielts-hub-staging/
+> **End-to-end test page:** https://maqsudjon-cell.github.io/ielts-hub-staging/test-lab.html
 
 A static, single-page site that lists IELTS practice tests grouped by category. Hosted on GitHub Pages.
 

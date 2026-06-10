@@ -17,6 +17,46 @@
   var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfdFsU9ZSg-52UvH8rHWCfbuj6K4W4RWFCbX93GyFabAjeZIEyJJk6qDGKmJLDzGVSOA/exec';
   // ────────────────────────────────────────────────────────
 
+  // ─── Base URL / environment ───────────────────────────
+  // Derive where this script was loaded from, so firebase-init.js and the
+  // "My results" page resolve to the same deployment (staging vs production).
+  var SCRIPT_SRC = (function () {
+    try {
+      if (document.currentScript && document.currentScript.src) return document.currentScript.src;
+    } catch (e) {}
+    return 'https://maqsudjon-cell.github.io/ielts-hub/js/tracker.js';
+  })();
+  var BASE_URL   = SCRIPT_SRC.replace(/\/js\/tracker\.js(\?.*)?$/, '');
+  var IS_STAGING = /ielts-hub-staging/.test(BASE_URL);
+
+  // Firebase results database — loaded lazily. Everything here degrades
+  // gracefully: if Firebase is blocked or misconfigured, the Sheets
+  // pipeline below still works untouched.
+  function ensureFirebase() {
+    if (window.IHFirebase) return window.IHFirebase.ready;
+    return new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = BASE_URL + '/js/firebase-init.js';
+      s.defer = true;
+      s.onload = function () { resolve(window.IHFirebase ? window.IHFirebase.ready : null); };
+      s.onerror = function () { resolve(null); };
+      (document.head || document.documentElement).appendChild(s);
+    });
+  }
+
+  function syncStudent(name) {
+    if (!name) return;
+    ensureFirebase().then(function (fb) {
+      if (!fb || !fb.user) return;
+      fb.db.collection('students').doc(fb.user.uid).set({
+        name: name,
+        updatedAt: fb.firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(function (err) {
+        console.warn('[IELTS Tracker] student sync failed:', err && err.code);
+      });
+    });
+  }
+
   var STORAGE_KEY = 'ielts_student_name';
   var STYLE_ID    = 'ih-tracker-styles';
   var MODAL_ID    = 'ih-tracker-modal';
@@ -147,20 +187,21 @@
     '  padding:0;',
     '}',
     '#ih-tracker-pill:hover .ih-pill-body,#ih-tracker-pill.is-open .ih-pill-body{',
-    '  max-width:240px;opacity:1;padding:0 8px 0 8px;',
+    '  max-width:340px;opacity:1;padding:0 8px 0 8px;',
     '}',
     '#ih-tracker-pill .ih-pill-greet{color:var(--ih-muted);}',
     '#ih-tracker-pill .ih-pill-name{font-weight:600;}',
     '#ih-tracker-pill .ih-pill-sep{color:var(--ih-muted);opacity:0.5;}',
-    '#ih-tracker-pill .ih-pill-change{',
+    '#ih-tracker-pill .ih-pill-change,#ih-tracker-pill .ih-pill-results{',
     '  display:inline-flex;align-items:center;justify-content:center;',
     '  background:none;border:none;cursor:pointer;',
     '  color:var(--ih-accent-2);font:500 12px Inter,sans-serif;',
     '  padding:6px 8px;border-radius:999px;min-height:30px;',
+    '  text-decoration:none;white-space:nowrap;',
     '  transition:background-color 180ms ease,color 180ms ease;',
     '}',
-    '#ih-tracker-pill .ih-pill-change:hover{background:rgba(0,136,204,0.18);color:#7ec8ed;}',
-    '#ih-tracker-pill .ih-pill-change:focus-visible{outline:2px solid var(--ih-accent-2);outline-offset:2px;}',
+    '#ih-tracker-pill .ih-pill-change:hover,#ih-tracker-pill .ih-pill-results:hover{background:rgba(0,136,204,0.18);color:#7ec8ed;}',
+    '#ih-tracker-pill .ih-pill-change:focus-visible,#ih-tracker-pill .ih-pill-results:focus-visible{outline:2px solid var(--ih-accent-2);outline-offset:2px;}',
 
     /* Toast (non-blocking confirmation) */
     '.ih-tracker-toast{',
@@ -297,6 +338,8 @@
           '<span class="ih-pill-greet">Hi,</span>' +
           '<span class="ih-pill-name"></span>' +
           '<span class="ih-pill-sep">·</span>' +
+          '<a class="ih-pill-results" target="_blank" rel="noopener" hidden>My results</a>' +
+          '<span class="ih-pill-sep ih-pill-results-sep" hidden>·</span>' +
           '<button type="button" class="ih-pill-change" aria-label="Change name">Change</button>' +
         '</div>';
       // Avatar toggles the expanded state (needed for touch where there is no hover)
@@ -305,6 +348,17 @@
         pill.classList.toggle('is-open');
       });
       pill.querySelector('.ih-pill-change').addEventListener('click', changeName);
+      // "My results" link appears once Firebase resolves the student's uid —
+      // the uid travels in the URL so the dashboard works cross-origin.
+      ensureFirebase().then(function (fb) {
+        if (!fb || !fb.user) return;
+        var link = pill.querySelector('.ih-pill-results');
+        var sep  = pill.querySelector('.ih-pill-results-sep');
+        if (!link) return;
+        link.href = BASE_URL + '/me.html?uid=' + encodeURIComponent(fb.user.uid);
+        link.hidden = false;
+        if (sep) sep.hidden = false;
+      });
       // Tap anywhere else collapses it again
       document.addEventListener('click', function (e) {
         if (!pill.contains(e.target)) pill.classList.remove('is-open');
@@ -357,6 +411,35 @@
     // Always log so the user can verify integration even before deploying Apps Script
     try { console.log('[IELTS Tracker] result', data); } catch (e) {}
 
+    // ─── Firestore write (fire-and-forget, independent of Sheets) ───
+    // Security rules accept numeric scores 0–40 only; anything else is
+    // skipped here so a rules rejection never surfaces to the student.
+    var numScore = Number(data.score);
+    if (Number.isFinite(numScore) && numScore >= 0 && numScore <= 40) {
+      ensureFirebase().then(function (fb) {
+        if (!fb || !fb.user) return;
+        fb.db.collection('results').add({
+          uid:   fb.user.uid,
+          name:  data.name,
+          test:  data.test.slice(0, 180),
+          score: numScore,
+          ts:    fb.firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+          console.log('[IELTS Tracker] result saved to Firestore');
+        }).catch(function (err) {
+          console.warn('[IELTS Tracker] Firestore write failed:', err && err.code);
+        });
+      });
+    }
+
+    // Staging deployments skip the Sheets write so test runs never
+    // pollute the real student spreadsheet.
+    if (IS_STAGING) {
+      console.log('[IELTS Tracker] staging — Sheets write skipped');
+      toast('Result saved ✓ (staging)', false);
+      return Promise.resolve(true);
+    }
+
     if (!WEB_APP_URL) {
       console.warn('[IELTS Tracker] WEB_APP_URL is empty — set it in tracker.js to enable Google Sheets logging.');
       toast('Result saved locally (Sheets URL not set)', true);
@@ -392,7 +475,7 @@
 
   function init() {
     injectStyles();
-    ensureName();
+    ensureName().then(syncStudent);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

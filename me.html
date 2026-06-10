@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My results — IELTS Practice Hub</title>
+  <meta name="description" content="Your IELTS practice history: scores, band estimates, and progress over time." />
+  <meta name="robots" content="noindex" />
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    })();
+  </script>
+
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body, h1, h2, h3, p { margin: 0; padding: 0; }
+    a { color: inherit; text-decoration: none; }
+
+    :root {
+      --bg: #FAFAF9;
+      --surface: #FFFFFF;
+      --text: #0A0A0A;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --accent: #047857;
+      --accent-soft: rgba(4, 120, 87, 0.08);
+      --amber: #B45309;
+      --amber-soft: rgba(180, 83, 9, 0.1);
+      --shadow-card: 0 1px 2px rgba(10, 10, 10, 0.03);
+    }
+    [data-theme="dark"] {
+      --bg: #0A0A0A;
+      --surface: #111111;
+      --text: #FAFAFA;
+      --muted: #A1A1AA;
+      --border: #1F1F1F;
+      --accent: #10B981;
+      --accent-soft: rgba(16, 185, 129, 0.12);
+      --amber: #F59E0B;
+      --amber-soft: rgba(245, 158, 11, 0.14);
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+    html { color-scheme: light dark; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px; line-height: 1.6;
+      background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 64px; }
+    @media (min-width: 768px) { .container { padding: 64px 48px 96px; } }
+
+    .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      margin-bottom: 24px; transition: color 150ms ease;
+    }
+    .back:hover { color: var(--accent); }
+
+    .kicker {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px; background: var(--accent-soft); color: var(--accent);
+      border-radius: 999px; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .kicker::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+    h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+    @media (min-width: 768px) { h1 { font-size: 40px; } }
+    .subtitle { margin-top: 8px; color: var(--muted); font-size: 15px; }
+    .subtitle strong { color: var(--text); font-weight: 600; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin: 28px 0;
+    }
+    @media (max-width: 540px) { .stats { grid-template-columns: 1fr; } }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow-card);
+    }
+    .stat .label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+    .stat .value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-feature-settings: 'tnum'; }
+    .stat .hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow-card);
+      margin-bottom: 24px;
+    }
+    .panel h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+    .chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+    .chart .bar {
+      flex: 1; min-width: 8px; max-width: 48px;
+      background: var(--accent-soft); border-radius: 6px 6px 2px 2px;
+      position: relative; transition: background 150ms ease;
+    }
+    .chart .bar > i {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      background: var(--accent); opacity: 0.85; border-radius: 6px 6px 2px 2px;
+      min-height: 4px;
+    }
+    .chart .bar:hover > i { opacity: 1; }
+    .chart-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+    .row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 4px; border-bottom: 1px solid var(--border);
+    }
+    .row:last-child { border-bottom: none; }
+    .row .test { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row .date { font-size: 12.5px; color: var(--muted); white-space: nowrap; font-feature-settings: 'tnum'; }
+    .chip {
+      display: inline-flex; align-items: center; padding: 3px 10px;
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: var(--accent-soft); color: var(--accent); white-space: nowrap;
+      font-feature-settings: 'tnum';
+    }
+    .chip.band { background: var(--amber-soft); color: var(--amber); }
+
+    .empty { text-align: center; padding: 56px 24px; }
+    .empty h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .empty p { color: var(--muted); font-size: 14px; max-width: 440px; margin: 0 auto; }
+    .empty .loading-spinner {
+      width: 16px; height: 16px; margin: 0 auto 14px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .foot-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="./">← All tests</a>
+
+    <header>
+      <span class="kicker">IELTS · Practice</span>
+      <h1>My results</h1>
+      <p class="subtitle" id="subtitle">Your practice history on this hub.</p>
+    </header>
+
+    <main id="content">
+      <div class="empty">
+        <div class="loading-spinner"></div>
+        <p>Loading your results…</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/firebase-init.js" defer></script>
+  <script>
+    'use strict';
+
+    var UID_KEY = 'ih_uid';
+
+    /* Raw-score → band conversion (Cambridge-style lower bounds). Scores
+       that already look like bands (≤ 9) are shown as-is. */
+    var BAND_LISTENING = [[39,9],[37,8.5],[35,8],[32,7.5],[30,7],[26,6.5],[23,6],[18,5.5],[16,5],[13,4.5],[10,4],[8,3.5],[6,3]];
+    var BAND_READING_AC = [[39,9],[37,8.5],[35,8],[33,7.5],[30,7],[27,6.5],[23,6],[19,5.5],[15,5],[13,4.5],[10,4],[8,3.5],[6,3]];
+
+    function bandFor(test, score) {
+      if (score <= 9) return null; // already a band score
+      var table = /reading/i.test(test) ? BAND_READING_AC
+                : /listening/i.test(test) ? BAND_LISTENING
+                : null;
+      if (!table) return null;
+      for (var i = 0; i < table.length; i++) {
+        if (score >= table[i][0]) return table[i][1];
+      }
+      return 2.5;
+    }
+
+    function escapeHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+    function fmtDate(d) {
+      try { return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+      catch (e) { return ''; }
+    }
+    function fmtNum(n) {
+      return (Math.round(n * 10) / 10).toString();
+    }
+
+    function resolveUid() {
+      var params = new URLSearchParams(location.search);
+      var fromUrl = (params.get('uid') || '').trim();
+      if (fromUrl) {
+        try { localStorage.setItem(UID_KEY, fromUrl); } catch (e) {}
+        return fromUrl;
+      }
+      try { return (localStorage.getItem(UID_KEY) || '').trim(); } catch (e) { return ''; }
+    }
+
+    function showEmpty(title, body) {
+      document.getElementById('content').innerHTML =
+        '<div class="panel"><div class="empty"><h2>' + escapeHtml(title) + '</h2><p>' + body + '</p></div></div>';
+    }
+
+    function render(name, results) {
+      if (name) {
+        document.getElementById('subtitle').innerHTML =
+          'Practice history for <strong>' + escapeHtml(name) + '</strong>';
+      }
+      if (results.length === 0) {
+        showEmpty('No results yet',
+          'Finish any test on the hub and your score will appear here automatically.');
+        return;
+      }
+
+      var total = results.length;
+      var sum = 0, best = results[0];
+      results.forEach(function (r) {
+        sum += r.score;
+        if (r.score > best.score) best = r;
+      });
+      var avg = sum / total;
+
+      var statsHtml =
+        '<div class="stats">' +
+          '<div class="stat"><div class="label">Tests completed</div><div class="value">' + total + '</div></div>' +
+          '<div class="stat"><div class="label">Average score</div><div class="value">' + fmtNum(avg) + '</div><div class="hint">across all attempts</div></div>' +
+          '<div class="stat"><div class="label">Best score</div><div class="value">' + fmtNum(best.score) + '</div><div class="hint">' + escapeHtml(best.test.slice(0, 40)) + '</div></div>' +
+        '</div>';
+
+      // Chronological bars of the most recent attempts
+      var recent = results.slice(0, 16).reverse();
+      var barsHtml = recent.map(function (r) {
+        var pct = Math.max(4, Math.min(100, (r.score / 40) * 100));
+        var label = escapeHtml(r.test + ' — ' + fmtNum(r.score) + (r.date ? ' · ' + fmtDate(r.date) : ''));
+        return '<div class="bar" title="' + label + '"><i style="height:' + pct.toFixed(0) + '%"></i></div>';
+      }).join('');
+      var chartHtml =
+        '<div class="panel"><h2>Recent attempts</h2>' +
+          '<div class="chart">' + barsHtml + '</div>' +
+          '<div class="chart-note">Oldest → newest · bar height is the raw score out of 40</div>' +
+        '</div>';
+
+      var rowsHtml = results.map(function (r) {
+        var band = bandFor(r.test, r.score);
+        return '<div class="row">' +
+          '<span class="test">' + escapeHtml(r.test) + '</span>' +
+          (band !== null ? '<span class="chip band">Band ' + fmtNum(band) + '</span>' : '') +
+          '<span class="chip">' + fmtNum(r.score) + '</span>' +
+          '<span class="date">' + (r.date ? escapeHtml(fmtDate(r.date)) : '') + '</span>' +
+        '</div>';
+      }).join('');
+      var listHtml = '<div class="panel"><h2>All results (' + total + ')</h2>' + rowsHtml +
+        '<p class="foot-note">Band estimates use standard Listening / Academic Reading conversion tables — your official score may differ.</p></div>';
+
+      document.getElementById('content').innerHTML = statsHtml + chartHtml + listHtml;
+    }
+
+    function load() {
+      var uid = resolveUid();
+      if (!uid) {
+        showEmpty('No student linked on this device',
+          'Open any test on the hub, tap your avatar in the top-left corner, and choose <strong>My results</strong> — that link brings you here with your history attached.');
+        return;
+      }
+
+      if (!window.IHFirebase) {
+        showEmpty('Could not load', 'The results service did not load. Please refresh and try again.');
+        return;
+      }
+
+      window.IHFirebase.ready.then(function (fb) {
+        if (!fb) {
+          showEmpty('Results unavailable',
+            'Could not reach the results database. Check your connection and refresh.');
+          return;
+        }
+
+        var nameP = fb.db.collection('students').doc(uid).get()
+          .then(function (snap) { return snap.exists ? (snap.data().name || '') : ''; })
+          .catch(function () { return ''; });
+
+        var resultsP = fb.db.collection('results').where('uid', '==', uid).limit(500).get()
+          .then(function (qs) {
+            var rows = [];
+            qs.forEach(function (doc) {
+              var d = doc.data();
+              var score = Number(d.score);
+              if (!Number.isFinite(score)) return;
+              rows.push({
+                test: String(d.test || 'Untitled test'),
+                score: score,
+                date: d.ts && d.ts.toDate ? d.ts.toDate() : null
+              });
+            });
+            rows.sort(function (a, b) { return (b.date ? b.date.getTime() : 0) - (a.date ? a.date.getTime() : 0); });
+            return rows;
+          });
+
+        Promise.all([nameP, resultsP]).then(function (vals) {
+          render(vals[0], vals[1]);
+        }).catch(function (err) {
+          console.warn('[My results] load failed:', err && err.code, err && err.message);
+          showEmpty('Could not load results',
+            'Something went wrong while reading your history (' + escapeHtml((err && err.code) || 'unknown error') + '). Please try again in a minute.');
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', load);
+    } else {
+      load();
+    }
+  </script>
+
+  <script src="js/footer.js" defer></script>
+</body>
+</html>

@@ -27,7 +27,8 @@
     return 'https://maqsudjon-cell.github.io/ielts-hub/js/tracker.js';
   })();
   var BASE_URL   = SCRIPT_SRC.replace(/\/js\/tracker\.js(\?.*)?$/, '');
-  var IS_STAGING = /ielts-hub-staging/.test(BASE_URL);
+  // Staging *and* local development must never write to the production Sheet.
+  var IS_STAGING = /ielts-hub-staging|localhost|127\.0\.0\.1/.test(BASE_URL);
 
   // Firebase results database — loaded lazily. Everything here degrades
   // gracefully: if Firebase is blocked or misconfigured, the Sheets

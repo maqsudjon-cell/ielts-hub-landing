@@ -188,8 +188,12 @@
       if (loaded) {
         var u = window.FSAuth.getUser();
         if (!u) {
-          window.FSAuth.require();
-          return new Promise(function () {}); // redirecting
+          if (!window.FSAuth.require()) {
+            return new Promise(function () {}); // redirecting to /account/
+          }
+          // Enforcement is off (transition mode) — legacy name keeps tools usable.
+          fsUser = { name: legacyName() || 'Student', first_name: '', last_name: '', phone: '' };
+          return fsUser;
         }
         fsUser = toDisplay(u);
         return fsUser;

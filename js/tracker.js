@@ -3,7 +3,7 @@
  * Self-contained: injects modal + change-name pill, exposes window.IELTSTracker.
  *
  * Usage on a test page (one line, anywhere in <body> or <head>):
- *   <script src="https://maqsudjon-cell.github.io/ielts-hub/js/tracker.js" defer></script>
+ *   <script src="https://flarestamina.com/ielts-hub/js/tracker.js" defer></script>
  *
  * Then where the final score is computed:
  *   IELTSTracker.sendResult('Trainer 2 Test 5 Listening', score);
@@ -24,7 +24,7 @@
     try {
       if (document.currentScript && document.currentScript.src) return document.currentScript.src;
     } catch (e) {}
-    return 'https://maqsudjon-cell.github.io/ielts-hub/js/tracker.js';
+    return 'https://flarestamina.com/ielts-hub/js/tracker.js';
   })();
   var BASE_URL   = SCRIPT_SRC.replace(/\/js\/tracker\.js(\?.*)?$/, '');
   // Staging *and* local development must never write to the production Sheet.

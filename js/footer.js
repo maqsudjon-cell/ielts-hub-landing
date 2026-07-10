@@ -52,11 +52,11 @@
           '<p class="ih-footer-sub">Reach out on Telegram or subscribe to our channel for updates.</p>' +
 
           '<div class="ih-footer-actions">' +
-            '<a class="ih-cta ih-cta-primary" href="https://t.me/pangea8" target="_blank" rel="noopener noreferrer" aria-label="Join Telegram channel: Flarestamina">' +
+            '<a class="ih-cta ih-cta-primary" href="https://t.me/flarestamina" target="_blank" rel="noopener noreferrer" aria-label="Join Telegram channel: Flarestamina">' +
               '<span class="ih-cta-icon">' + TELEGRAM_SVG + '</span>' +
               '<span class="ih-cta-text">' +
                 '<span class="ih-cta-label">Join Channel</span>' +
-                '<span class="ih-cta-handle">IELTS tips · new tests</span>' +
+                '<span class="ih-cta-handle">@flarestamina</span>' +
               '</span>' +
               '<span class="ih-cta-chev" aria-hidden="true">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>' +

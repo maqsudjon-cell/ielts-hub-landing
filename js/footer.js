@@ -3,7 +3,7 @@
  * Self-contained: injects a link to footer.css and renders a premium contact section.
  *
  * Usage on any page (one line, anywhere in <body> or <head>):
- *   <script src="https://maqsudjon-cell.github.io/ielts-hub/js/footer.js" defer></script>
+ *   <script src="https://flarestamina.com/ielts-hub/js/footer.js" defer></script>
  */
 (function () {
   'use strict';
@@ -14,7 +14,7 @@
       var s = document.currentScript;
       if (s && s.src) return s.src.replace(/\/js\/footer\.js(\?.*)?$/, '/css/footer.css');
     } catch (e) {}
-    return 'https://maqsudjon-cell.github.io/ielts-hub/css/footer.css';
+    return 'https://flarestamina.com/ielts-hub/css/footer.css';
   })();
 
   var FOOTER_CLASS = 'ih-footer';
@@ -52,11 +52,11 @@
           '<p class="ih-footer-sub">Reach out on Telegram or subscribe to our channel for updates.</p>' +
 
           '<div class="ih-footer-actions">' +
-            '<a class="ih-cta ih-cta-primary" href="https://t.me/pangea8" target="_blank" rel="noopener noreferrer" aria-label="Join Telegram channel: pangea8">' +
+            '<a class="ih-cta ih-cta-primary" href="https://t.me/pangea8" target="_blank" rel="noopener noreferrer" aria-label="Join Telegram channel: Flarestamina">' +
               '<span class="ih-cta-icon">' + TELEGRAM_SVG + '</span>' +
               '<span class="ih-cta-text">' +
                 '<span class="ih-cta-label">Join Channel</span>' +
-                '<span class="ih-cta-handle">@pangea8</span>' +
+                '<span class="ih-cta-handle">@Flarestamina</span>' +
               '</span>' +
               '<span class="ih-cta-chev" aria-hidden="true">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>' +

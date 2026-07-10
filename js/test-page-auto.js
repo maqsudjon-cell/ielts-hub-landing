@@ -2,7 +2,7 @@
  * IELTS Hub — Test-page auto-loader (single-tag installer)
  *
  * Drop this on any test page:
- *   <script src="https://maqsudjon-cell.github.io/ielts-hub/js/test-page-auto.js" defer></script>
+ *   <script src="https://flarestamina.com/ielts-hub/js/test-page-auto.js" defer></script>
  *
  * What it does, with zero per-page configuration:
  *   1. Injects tracker.js  → name modal + "Hi, {name} · Change" pill + sendResult()
@@ -21,7 +21,7 @@
   if (window.__ihAutoLoaded) return;
   window.__ihAutoLoaded = true;
 
-  var BASE = 'https://maqsudjon-cell.github.io/ielts-hub';
+  var BASE = 'https://flarestamina.com/ielts-hub';
 
   // ─── 1. Inject tracker.js + footer.js ─────────────────────────
   function ensureScript(src) {

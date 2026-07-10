@@ -1,43 +1,41 @@
 /*!
- * IELTS Hub — Student Tracker
- * Self-contained: injects modal + change-name pill, exposes window.IELTSTracker.
+ * IELTS Hub — Student Tracker (FS Account edition)
+ * Self-contained: requires an FS Account (one sign-up for the whole
+ * FLARESTAMINA ecosystem), shows a "Hi, {name}" pill, exposes
+ * window.IELTSTracker.
  *
  * Usage on a test page (one line, anywhere in <body> or <head>):
  *   <script src="https://flarestamina.com/ielts-hub/js/tracker.js" defer></script>
  *
  * Then where the final score is computed:
  *   IELTSTracker.sendResult('Trainer 2 Test 5 Listening', score);
+ *
+ * Identity comes from FS Account (fs-auth.js). Auth is mandatory — with no
+ * session the student is redirected to https://flarestamina.com/account/.
+ * Results carry {phone, first_name, last_name}; phone is the stable user ID.
  */
 (function () {
   'use strict';
 
   // ─── CONFIG ────────────────────────────────────────────
-  // Paste your Apps Script Web App URL here after deploying Code.gs.
-  // While empty, results are logged to console only (no network call).
   var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfdFsU9ZSg-52UvH8rHWCfbuj6K4W4RWFCbX93GyFabAjeZIEyJJk6qDGKmJLDzGVSOA/exec';
+  var FS_AUTH_URL = 'https://flarestamina.com/assets/fs-auth.js';
+  var ACCOUNT_URL = 'https://flarestamina.com/account/';
+  var LEGACY_NAME_KEY = 'ielts_student_name'; // read-only fallback if fs-auth.js cannot load
   // ────────────────────────────────────────────────────────
 
-  // ─── Base URL / environment ───────────────────────────
-  // Derive where this script was loaded from, so firebase-init.js and the
-  // "My results" page resolve to the same deployment (staging vs production).
-  var SCRIPT_SRC = (function () {
-    try {
-      if (document.currentScript && document.currentScript.src) return document.currentScript.src;
-    } catch (e) {}
-    return 'https://flarestamina.com/ielts-hub/js/tracker.js';
-  })();
-  var BASE_URL   = SCRIPT_SRC.replace(/\/js\/tracker\.js(\?.*)?$/, '');
-  // Staging *and* local development must never write to the production Sheet.
-  var IS_STAGING = /ielts-hub-staging|localhost|127\.0\.0\.1/.test(BASE_URL);
+  var STYLE_ID = 'ih-tracker-styles';
+  var PILL_ID  = 'ih-tracker-pill';
 
   // Firebase results database — loaded lazily. Everything here degrades
   // gracefully: if Firebase is blocked or misconfigured, the Sheets
   // pipeline below still works untouched.
+  var FIREBASE_INIT_URL = 'https://flarestamina.com/ielts-hub/js/firebase-init.js';
   function ensureFirebase() {
     if (window.IHFirebase) return window.IHFirebase.ready;
     return new Promise(function (resolve) {
       var s = document.createElement('script');
-      s.src = BASE_URL + '/js/firebase-init.js';
+      s.src = FIREBASE_INIT_URL;
       s.defer = true;
       s.onload = function () { resolve(window.IHFirebase ? window.IHFirebase.ready : null); };
       s.onerror = function () { resolve(null); };
@@ -45,12 +43,13 @@
     });
   }
 
-  function syncStudent(name) {
-    if (!name) return;
+  function syncStudent(user) {
+    if (!user || !user.name) return;
     ensureFirebase().then(function (fb) {
       if (!fb || !fb.user) return;
       fb.db.collection('students').doc(fb.user.uid).set({
-        name: name,
+        name: user.name,
+        phone: user.phone || '',
         updatedAt: fb.firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }).catch(function (err) {
         console.warn('[IELTS Tracker] student sync failed:', err && err.code);
@@ -58,158 +57,64 @@
     });
   }
 
-  var STORAGE_KEY = 'ielts_student_name';
-  var STYLE_ID    = 'ih-tracker-styles';
-  var MODAL_ID    = 'ih-tracker-modal';
-  var PILL_ID     = 'ih-tracker-pill';
-
   // ─── CSS (injected once) ───────────────────────────────
   var CSS = [
-    '.ih-tracker-root,#ih-tracker-pill{',
+    '#ih-tracker-pill{',
     '  --ih-bg:#0f172a;',
     '  --ih-surface:rgba(17,24,39,0.78);',
     '  --ih-text:#f8fafc;',
     '  --ih-muted:#94a3b8;',
     '  --ih-border:rgba(255,255,255,0.08);',
-    '  --ih-accent:#0088cc;',
-    '  --ih-accent-2:#2AABEE;',
+    '  --ih-accent:#FF5A1F;',
+    '  --ih-accent-2:#FF7A3D;',
     '  --ih-radius:16px;',
     '  font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;',
     '  -webkit-font-smoothing:antialiased;',
     '  -moz-osx-font-smoothing:grayscale;',
     '}',
 
-    /* Modal root */
-    '.ih-tracker-root{',
-    '  position:fixed;inset:0;z-index:2147483600;',
-    '  display:flex;align-items:center;justify-content:center;',
-    '  padding:20px;',
-    '}',
-    '.ih-tracker-overlay{',
-    '  position:absolute;inset:0;',
-    '  background:rgba(2,6,23,0.65);',
-    '  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);',
-    '  opacity:0;transition:opacity 260ms cubic-bezier(0.4,0,0.2,1);',
-    '}',
-    '.ih-tracker-root.is-open .ih-tracker-overlay{opacity:1;}',
-    '.ih-tracker-root.is-closing .ih-tracker-overlay{opacity:0;}',
-
-    /* Modal card */
-    '.ih-tracker-card{',
-    '  position:relative;width:100%;max-width:420px;',
-    '  background:var(--ih-surface);',
-    '  backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);',
-    '  border:1px solid var(--ih-border);',
-    '  border-radius:var(--ih-radius);',
-    '  padding:32px;',
-    '  color:var(--ih-text);',
-    '  box-shadow:0 25px 50px -12px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.04),inset 0 1px 0 rgba(255,255,255,0.06);',
-    '  transform:scale(0.95);opacity:0;',
-    '  transition:transform 280ms cubic-bezier(0.4,0,0.2,1),opacity 220ms ease;',
-    '}',
-    '.ih-tracker-root.is-open .ih-tracker-card{transform:scale(1);opacity:1;}',
-    '.ih-tracker-root.is-closing .ih-tracker-card{transform:scale(0.98);opacity:0;transition-duration:180ms;}',
-
-    '.ih-tracker-kicker{',
-    '  display:inline-block;font-size:11px;font-weight:700;',
-    '  letter-spacing:0.14em;text-transform:uppercase;',
-    '  color:var(--ih-accent-2);',
-    '  padding:4px 10px;border-radius:999px;',
-    '  background:rgba(0,136,204,0.14);',
-    '  margin-bottom:16px;',
-    '}',
-    '.ih-tracker-card h2{',
-    '  margin:0 0 8px;font-size:24px;font-weight:700;',
-    '  letter-spacing:-0.02em;line-height:1.2;color:#fff;',
-    '}',
-    '.ih-tracker-sub{',
-    '  margin:0 0 24px;color:var(--ih-muted);font-size:14px;line-height:1.55;',
-    '}',
-    '.ih-tracker-form{display:flex;flex-direction:column;gap:12px;}',
-    '.ih-tracker-input{',
-    '  width:100%;min-height:48px;',
-    '  background:rgba(255,255,255,0.04);',
-    '  border:1px solid var(--ih-border);',
-    '  border-radius:12px;padding:0 16px;',
-    '  color:var(--ih-text);',
-    '  font:500 15px Inter,sans-serif;outline:none;',
-    '  transition:border-color 220ms ease,box-shadow 220ms ease,background-color 220ms ease;',
-    '}',
-    '.ih-tracker-input::placeholder{color:var(--ih-muted);}',
-    '.ih-tracker-input:focus{',
-    '  border-color:var(--ih-accent);',
-    '  background:rgba(255,255,255,0.06);',
-    '  box-shadow:0 0 0 4px rgba(0,136,204,0.2);',
-    '}',
-    '.ih-tracker-btn{',
-    '  display:inline-flex;align-items:center;justify-content:center;',
-    '  min-height:48px;border:none;cursor:pointer;',
-    '  border-radius:12px;',
-    '  background:linear-gradient(135deg,#2AABEE 0%,#0088cc 100%);',
-    '  color:#fff;font:600 15px Inter,sans-serif;letter-spacing:0.005em;',
-    '  box-shadow:0 6px 18px rgba(0,136,204,0.38),inset 0 1px 0 rgba(255,255,255,0.18);',
-    '  transition:transform 220ms cubic-bezier(0.4,0,0.2,1),box-shadow 220ms ease,filter 220ms ease;',
-    '}',
-    '.ih-tracker-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,136,204,0.5),inset 0 1px 0 rgba(255,255,255,0.2);}',
-    '.ih-tracker-btn:active{transform:translateY(0);filter:brightness(0.96);}',
-    '.ih-tracker-btn:focus-visible{outline:2px solid #fff;outline-offset:3px;}',
-
-    /* Account chip — collapses to a small avatar at top-left so it never covers',
-       a test page\'s timer/menu (top-right) or question nav (bottom). Expands',
-       to "Hi, {name} · Change" on hover (desktop) or tap (touch). */
+    /* Greeting pill */
     '#ih-tracker-pill{',
     '  position:fixed;top:10px;left:10px;z-index:2147483500;',
-    '  display:inline-flex;align-items:center;',
-    '  height:40px;padding:4px;',
-    '  background:rgba(15,23,42,0.55);',
+    '  display:flex;align-items:center;gap:0;',
+    '  background:var(--ih-surface);',
     '  backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);',
-    '  border:1px solid var(--ih-border);',
-    '  border-radius:999px;',
-    '  color:var(--ih-text);font-size:13px;line-height:1;',
-    '  box-shadow:0 6px 16px rgba(0,0,0,0.22);',
-    '  opacity:0.6;',
-    '  transition:opacity 200ms ease,box-shadow 200ms ease;',
+    '  border:1px solid var(--ih-border);border-radius:999px;',
+    '  color:var(--ih-text);font-size:13px;font-weight:500;',
+    '  box-shadow:0 8px 24px rgba(0,0,0,0.35);',
+    '  padding:4px;max-width:calc(100vw - 20px);',
+    '  transition:padding 200ms ease;',
     '}',
-    '#ih-tracker-pill:hover,#ih-tracker-pill.is-open{opacity:1;box-shadow:0 10px 24px rgba(0,0,0,0.32);}',
-    /* Avatar (always visible) */
     '#ih-tracker-pill .ih-pill-avatar{',
-    '  flex:0 0 auto;width:32px;height:32px;border-radius:50%;',
-    '  display:inline-flex;align-items:center;justify-content:center;',
-    '  background:linear-gradient(135deg,#2AABEE 0%,#0088cc 100%);',
-    '  color:#fff;font:600 14px Inter,sans-serif;text-transform:uppercase;',
-    '  cursor:pointer;border:none;padding:0;',
+    '  width:30px;height:30px;border-radius:50%;flex:0 0 30px;',
+    '  display:flex;align-items:center;justify-content:center;',
+    '  background:linear-gradient(135deg,var(--ih-accent),var(--ih-accent-2));',
+    '  color:#180702;font-weight:700;font-size:14px;text-transform:uppercase;',
+    '  border:none;cursor:pointer;padding:0;',
     '}',
-    '#ih-tracker-pill .ih-pill-avatar:focus-visible{outline:2px solid #fff;outline-offset:2px;}',
-    /* Collapsible body — hidden by default, revealed on hover/open */
     '#ih-tracker-pill .ih-pill-body{',
-    '  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;',
-    '  max-width:0;overflow:hidden;opacity:0;',
-    '  transition:max-width 240ms cubic-bezier(0.4,0,0.2,1),opacity 200ms ease,padding 240ms ease;',
-    '  padding:0;',
+    '  display:flex;align-items:center;gap:6px;overflow:hidden;',
+    '  max-width:0;opacity:0;transition:max-width 240ms ease,opacity 200ms ease,padding 200ms ease;',
+    '  white-space:nowrap;padding:0;',
     '}',
     '#ih-tracker-pill:hover .ih-pill-body,#ih-tracker-pill.is-open .ih-pill-body{',
-    '  max-width:340px;opacity:1;padding:0 8px 0 8px;',
+    '  max-width:280px;opacity:1;padding:0 10px 0 8px;',
     '}',
     '#ih-tracker-pill .ih-pill-greet{color:var(--ih-muted);}',
-    '#ih-tracker-pill .ih-pill-name{font-weight:600;}',
-    '#ih-tracker-pill .ih-pill-sep{color:var(--ih-muted);opacity:0.5;}',
-    '#ih-tracker-pill .ih-pill-change,#ih-tracker-pill .ih-pill-results{',
-    '  display:inline-flex;align-items:center;justify-content:center;',
-    '  background:none;border:none;cursor:pointer;',
-    '  color:var(--ih-accent-2);font:500 12px Inter,sans-serif;',
-    '  padding:6px 8px;border-radius:999px;min-height:30px;',
-    '  text-decoration:none;white-space:nowrap;',
-    '  transition:background-color 180ms ease,color 180ms ease;',
+    '#ih-tracker-pill .ih-pill-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:150px;}',
+    '#ih-tracker-pill .ih-pill-sep{color:var(--ih-muted);}',
+    '#ih-tracker-pill .ih-pill-change{',
+    '  background:none;border:none;padding:2px 2px;cursor:pointer;',
+    '  color:var(--ih-accent-2);font:inherit;font-weight:600;font-size:12.5px;',
+    '  border-radius:6px;transition:color 150ms ease;',
     '}',
-    '#ih-tracker-pill .ih-pill-change:hover,#ih-tracker-pill .ih-pill-results:hover{background:rgba(0,136,204,0.18);color:#7ec8ed;}',
-    '#ih-tracker-pill .ih-pill-change:focus-visible,#ih-tracker-pill .ih-pill-results:focus-visible{outline:2px solid var(--ih-accent-2);outline-offset:2px;}',
+    '#ih-tracker-pill .ih-pill-change:hover{color:var(--ih-accent);text-decoration:underline;}',
 
-    /* Toast (non-blocking confirmation) */
+    /* Toast */
     '.ih-tracker-toast{',
-    '  position:fixed;left:50%;bottom:24px;transform:translate(-50%,8px);',
-    '  z-index:2147483700;',
-    '  display:inline-flex;align-items:center;gap:10px;',
-    '  padding:10px 16px;border-radius:999px;',
+    '  position:fixed;left:50%;bottom:26px;transform:translate(-50%,8px);',
+    '  z-index:2147483600;display:flex;align-items:center;gap:9px;',
+    '  padding:11px 16px;border-radius:12px;',
     '  background:rgba(15,23,42,0.92);color:#f8fafc;',
     '  border:1px solid rgba(255,255,255,0.1);',
     '  font:500 13px Inter,sans-serif;',
@@ -223,15 +128,12 @@
 
     /* Mobile */
     '@media (max-width:480px){',
-    '  .ih-tracker-card{padding:24px;border-radius:18px;}',
-    '  .ih-tracker-card h2{font-size:22px;}',
     '  #ih-tracker-pill{top:8px;left:8px;font-size:12px;}',
     '}',
 
     /* Reduced motion */
     '@media (prefers-reduced-motion:reduce){',
-    '  .ih-tracker-overlay,.ih-tracker-card,.ih-tracker-input,.ih-tracker-btn,',
-    '  #ih-tracker-pill,#ih-tracker-pill .ih-pill-change,.ih-tracker-toast{',
+    '  #ih-tracker-pill,#ih-tracker-pill .ih-pill-body,.ih-tracker-toast{',
     '    transition:none !important;',
     '  }',
     '}'
@@ -245,137 +147,97 @@
     document.head.appendChild(s);
   }
 
-  // ─── Storage helpers ──────────────────────────────────
-  function readName() {
-    try { return (localStorage.getItem(STORAGE_KEY) || '').trim(); }
+  // ─── FS Account session ───────────────────────────────
+  var fsUser = null; // {name, first_name, last_name, phone}
+
+  function toDisplay(u) {
+    if (!u) return null;
+    var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim();
+    return { name: name, first_name: u.first_name || '', last_name: u.last_name || '', phone: u.phone || '' };
+  }
+
+  function legacyName() {
+    try { return (localStorage.getItem(LEGACY_NAME_KEY) || '').trim(); }
     catch (e) { return ''; }
   }
-  function saveName(n) {
-    try { localStorage.setItem(STORAGE_KEY, (n || '').trim()); }
-    catch (e) { /* private mode etc. — still works in memory for this session */ }
-  }
-  function clearName() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-  }
 
-  // ─── Modal ────────────────────────────────────────────
-  function showModal() {
+  function ensureAuthScript() {
     return new Promise(function (resolve) {
-      if (document.getElementById(MODAL_ID)) {
-        document.getElementById(MODAL_ID).remove();
+      if (window.FSAuth) { resolve(true); return; }
+      var existing = document.querySelector('script[data-fs-auth]');
+      if (existing) {
+        existing.addEventListener('load', function () { resolve(!!window.FSAuth); });
+        existing.addEventListener('error', function () { resolve(false); });
+        return;
       }
-
-      var root = document.createElement('div');
-      root.className = 'ih-tracker-root';
-      root.id = MODAL_ID;
-      root.setAttribute('role', 'dialog');
-      root.setAttribute('aria-modal', 'true');
-      root.setAttribute('aria-labelledby', 'ih-tracker-title');
-
-      root.innerHTML =
-        '<div class="ih-tracker-overlay" aria-hidden="true"></div>' +
-        '<div class="ih-tracker-card">' +
-          '<span class="ih-tracker-kicker">Welcome</span>' +
-          '<h2 id="ih-tracker-title">Enter your name</h2>' +
-          '<p class="ih-tracker-sub">We\'ll save it on this device so you don\'t need to enter it again.</p>' +
-          '<form class="ih-tracker-form" novalidate>' +
-            '<input type="text" class="ih-tracker-input" placeholder="Your name" autocomplete="name" required maxlength="60" aria-label="Your name" />' +
-            '<button type="submit" class="ih-tracker-btn">Continue</button>' +
-          '</form>' +
-        '</div>';
-
-      document.body.appendChild(root);
-      // Trigger open animation on next frame
-      requestAnimationFrame(function () { root.classList.add('is-open'); });
-
-      var input = root.querySelector('.ih-tracker-input');
-      var form  = root.querySelector('.ih-tracker-form');
-
-      // Focus the input shortly after opening so the animation looks intentional
-      setTimeout(function () { input.focus(); }, 80);
-
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var v = (input.value || '').trim();
-        if (!v) { input.focus(); input.classList.add('is-invalid'); return; }
-        saveName(v);
-
-        root.classList.add('is-closing');
-        setTimeout(function () {
-          root.remove();
-          ensurePill();
-          resolve(v);
-        }, 200);
-      });
-
-      // Keep focus inside the modal (simple trap on Tab)
-      root.addEventListener('keydown', function (e) {
-        if (e.key === 'Tab') {
-          // Single focusable area — input then button → re-loop
-          var focusables = [input, root.querySelector('.ih-tracker-btn')];
-          var i = focusables.indexOf(document.activeElement);
-          if (e.shiftKey) { e.preventDefault(); focusables[(i - 1 + focusables.length) % focusables.length].focus(); }
-          else            { e.preventDefault(); focusables[(i + 1) % focusables.length].focus(); }
-        }
-      });
+      var s = document.createElement('script');
+      s.src = FS_AUTH_URL;
+      s.setAttribute('data-fs-auth', '1');
+      s.onload = function () { resolve(!!window.FSAuth); };
+      s.onerror = function () { resolve(false); };
+      (document.head || document.documentElement).appendChild(s);
     });
   }
 
-  // ─── Change-name pill ─────────────────────────────────
+  // Resolves with the user object. With no session it redirects to the
+  // account page (auth is mandatory) and the promise never resolves.
+  // If fs-auth.js itself cannot load (network failure), we degrade to any
+  // legacy stored name rather than bricking the test page.
+  function ensureUser() {
+    return ensureAuthScript().then(function (loaded) {
+      if (loaded) {
+        var u = window.FSAuth.getUser();
+        if (!u) {
+          window.FSAuth.require();
+          return new Promise(function () {}); // redirecting
+        }
+        fsUser = toDisplay(u);
+        return fsUser;
+      }
+      console.warn('[IELTS Tracker] fs-auth.js failed to load — falling back to legacy name');
+      fsUser = { name: legacyName(), first_name: '', last_name: '', phone: '' };
+      return fsUser;
+    });
+  }
+
+  function readName() {
+    return fsUser ? fsUser.name : '';
+  }
+
+  // ─── Greeting pill ────────────────────────────────────
   function ensurePill() {
-    var name = readName();
-    if (!name) {
-      var existing = document.getElementById(PILL_ID);
-      if (existing) existing.remove();
-      return;
-    }
+    if (!fsUser || !fsUser.name) return;
     var pill = document.getElementById(PILL_ID);
     if (!pill) {
       pill = document.createElement('div');
       pill.id = PILL_ID;
       pill.innerHTML =
-        '<button type="button" class="ih-pill-avatar" aria-label="Account — tap to change name"></button>' +
+        '<button type="button" class="ih-pill-avatar" aria-label="FS Account"></button>' +
         '<div class="ih-pill-body">' +
           '<span class="ih-pill-greet">Hi,</span>' +
           '<span class="ih-pill-name"></span>' +
           '<span class="ih-pill-sep">·</span>' +
-          '<a class="ih-pill-results" target="_blank" rel="noopener" hidden>My results</a>' +
-          '<span class="ih-pill-sep ih-pill-results-sep" hidden>·</span>' +
-          '<button type="button" class="ih-pill-change" aria-label="Change name">Change</button>' +
+          '<button type="button" class="ih-pill-change" aria-label="Manage FS Account">Account</button>' +
         '</div>';
-      // Avatar toggles the expanded state (needed for touch where there is no hover)
       pill.querySelector('.ih-pill-avatar').addEventListener('click', function (e) {
         e.stopPropagation();
         pill.classList.toggle('is-open');
       });
-      pill.querySelector('.ih-pill-change').addEventListener('click', changeName);
-      // "My results" link appears once Firebase resolves the student's uid —
-      // the uid travels in the URL so the dashboard works cross-origin.
-      ensureFirebase().then(function (fb) {
-        if (!fb || !fb.user) return;
-        var link = pill.querySelector('.ih-pill-results');
-        var sep  = pill.querySelector('.ih-pill-results-sep');
-        if (!link) return;
-        link.href = BASE_URL + '/me.html?uid=' + encodeURIComponent(fb.user.uid);
-        link.hidden = false;
-        if (sep) sep.hidden = false;
-      });
-      // Tap anywhere else collapses it again
+      pill.querySelector('.ih-pill-change').addEventListener('click', goToAccount);
       document.addEventListener('click', function (e) {
         if (!pill.contains(e.target)) pill.classList.remove('is-open');
       });
       document.body.appendChild(pill);
     }
-    pill.querySelector('.ih-pill-name').textContent = name;
-    pill.querySelector('.ih-pill-avatar').textContent = name.charAt(0);
+    pill.querySelector('.ih-pill-name').textContent = fsUser.first_name || fsUser.name;
+    pill.querySelector('.ih-pill-avatar').textContent = (fsUser.name || '?').charAt(0);
   }
 
-  function changeName() {
-    clearName();
-    location.reload();
+  function goToAccount() {
+    location.href = ACCOUNT_URL + '?return=' + encodeURIComponent(location.href);
   }
 
-  // ─── Toast (small "Saved ✓" notification) ─────────────
+  // ─── Toast ────────────────────────────────────────────
   function toast(message, isError) {
     var el = document.createElement('div');
     el.className = 'ih-tracker-toast' + (isError ? ' is-error' : '');
@@ -393,24 +255,105 @@
     return d.innerHTML;
   }
 
-  // ─── Public API ───────────────────────────────────────
-  function ensureName() {
-    return new Promise(function (resolve) {
-      var n = readName();
-      if (n) { ensurePill(); resolve(n); return; }
-      showModal().then(resolve);
-    });
+  /* Small celebration burst when a result is saved. No-op on reduced motion. */
+  function confetti() {
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var colors = ['#FF5A1F', '#FF7A3D', '#FFA45C', '#FFD166', '#F59E0B', '#EC4899'];
+      var frag = document.createDocumentFragment();
+      var pieces = [];
+      for (var i = 0; i < 28; i++) {
+        var el = document.createElement('div');
+        var size = 6 + Math.random() * 6;
+        el.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;top:-12px;left:' +
+          (10 + Math.random() * 80) + 'vw;width:' + size + 'px;height:' + (size * 0.6) + 'px;border-radius:2px;background:' +
+          colors[i % colors.length] + ';opacity:1;';
+        frag.appendChild(el);
+        pieces.push({ el: el, x: (Math.random() - 0.5) * 2, r: Math.random() * 360, v: 2 + Math.random() * 3 });
+      }
+      document.body.appendChild(frag);
+      var start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        var t = (ts - start) / 1000;
+        var done = t > 1.8;
+        pieces.forEach(function (p) {
+          p.el.style.transform = 'translate(' + (p.x * t * 60) + 'px,' + (p.v * t * t * 160) + 'px) rotate(' + (p.r + t * 320) + 'deg)';
+          if (t > 1.2) p.el.style.opacity = String(Math.max(0, 1 - (t - 1.2) / 0.6));
+        });
+        if (done) pieces.forEach(function (p) { p.el.remove(); });
+        else requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    } catch (e) {}
+  }
+
+  /* ─── Full Mock cross-promo ──────────────────────────
+     Shown once per 24h, ~4s after a result is saved (high-intent moment,
+     never during a test). Dismissible, auto-hides after 30s. */
+  function showFullMockPromo() {
+    try {
+      if (location.pathname.indexOf('/full-mock/') === 0) return;
+      var KEY = 'p8_fm_promo_ts';
+      var last = Number(localStorage.getItem(KEY) || 0);
+      if (Date.now() - last < 24 * 60 * 60 * 1000) return;
+      localStorage.setItem(KEY, String(Date.now()));
+
+      var st = document.createElement('style');
+      st.textContent =
+        '.p8-fm-promo{position:fixed;right:16px;bottom:16px;z-index:2147483000;max-width:330px;' +
+        'background:#151009;color:#fafafa;border:1px solid #3d2a1f;border-radius:16px;padding:16px 18px;' +
+        'box-shadow:0 12px 40px rgba(0,0,0,.45);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;' +
+        'transform:translateY(16px);opacity:0;transition:transform .35s,opacity .35s}' +
+        '.p8-fm-promo.on{transform:none;opacity:1}' +
+        '.p8-fm-promo .tag{display:inline-block;background:#FF5A1F;color:#180702;font-weight:800;font-size:10px;' +
+        'letter-spacing:.08em;border-radius:6px;padding:3px 8px;margin-bottom:8px}' +
+        '.p8-fm-promo b{color:#FF7A3D}' +
+        '.p8-fm-promo .x{position:absolute;top:8px;right:10px;background:none;border:none;color:#9ca3af;' +
+        'font-size:15px;cursor:pointer;padding:4px}' +
+        '.p8-fm-promo a.go{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#E8501A,#FF7A3D);' +
+        'color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:9px 16px;font-size:13.5px}' +
+        '@media(max-width:600px){.p8-fm-promo{left:12px;right:12px;bottom:12px;max-width:none}}';
+      document.head.appendChild(st);
+
+      var el = document.createElement('div');
+      el.className = 'p8-fm-promo';
+      el.innerHTML =
+        '<button class="x" aria-label="Close">✕</button>' +
+        '<span class="tag">NEW · FULL MOCK</span>' +
+        '<div>Ready for the real exam? <b>Listening + Reading + Writing</b> in one sitting — ' +
+        'real timers, AI-marked writing, instant IELTS-style result sheet.</div>' +
+        '<div style="margin-top:6px;color:#9ca3af;font-size:12.5px">Just <b>10 000 UZS</b> — the cheapest full mock around.</div>' +
+        '<a class="go" href="https://flarestamina.com/full-mock/">Try the Full Mock →</a>';
+      document.body.appendChild(el);
+      requestAnimationFrame(function () { el.classList.add('on'); });
+
+      function hide() { el.classList.remove('on'); setTimeout(function () { el.remove(); }, 400); }
+      el.querySelector('.x').addEventListener('click', hide);
+      setTimeout(hide, 30000);
+    } catch (e) {}
   }
 
   function sendResult(testName, score) {
     var data = {
       name:  readName(),
+      phone: fsUser ? fsUser.phone : '',
+      first_name: fsUser ? fsUser.first_name : '',
+      last_name:  fsUser ? fsUser.last_name : '',
       test:  String(testName || ''),
       score: (score === undefined || score === null) ? '' : score,
       date:  new Date().toISOString()
     };
     // Always log so the user can verify integration even before deploying Apps Script
     try { console.log('[IELTS Tracker] result', data); } catch (e) {}
+
+    // Local history — the hub (same origin) reads this to show "done" badges.
+    try {
+      var hist = JSON.parse(localStorage.getItem('p8_results') || '[]');
+      hist.push({ test: data.test, score: data.score, href: location.href, date: data.date });
+      if (hist.length > 300) hist = hist.slice(-300);
+      localStorage.setItem('p8_results', JSON.stringify(hist));
+    } catch (e) {}
 
     // ─── Firestore write (fire-and-forget, independent of Sheets) ───
     // Security rules accept numeric scores 0–40 only; anything else is
@@ -422,6 +365,7 @@
         fb.db.collection('results').add({
           uid:   fb.user.uid,
           name:  data.name,
+          phone: data.phone,
           test:  data.test.slice(0, 180),
           score: numScore,
           ts:    fb.firebase.firestore.FieldValue.serverTimestamp()
@@ -433,33 +377,22 @@
       });
     }
 
-    // Staging deployments skip the Sheets write so test runs never
-    // pollute the real student spreadsheet.
-    if (IS_STAGING) {
-      console.log('[IELTS Tracker] staging — Sheets write skipped');
-      toast('Result saved ✓ (staging)', false);
-      return Promise.resolve(true);
-    }
-
     if (!WEB_APP_URL) {
       console.warn('[IELTS Tracker] WEB_APP_URL is empty — set it in tracker.js to enable Google Sheets logging.');
       toast('Result saved locally (Sheets URL not set)', true);
       return Promise.resolve(false);
     }
 
+    confetti();
+    setTimeout(showFullMockPromo, 4000);
+
     // Show confirmation immediately — don't make the student wait on the network.
-    // The write happens server-side, and a no-cors response is opaque (unreadable)
-    // anyway, so there's nothing to wait for. Apps Script cold starts can add
-    // several seconds to the round-trip; firing the toast now keeps it instant.
     toast('Result saved ✓', false);
 
     // IMPORTANT: mode 'no-cors' is required for Apps Script.
     // Apps Script answers a POST with a 302 redirect to googleusercontent.com,
     // which sends no CORS headers — in default ('cors') mode the browser blocks
     // that redirect and the fetch rejects even though the row was written.
-    // 'no-cors' sends a simple request (text/plain is safelisted, no preflight)
-    // and the row is written. Fire-and-forget: keepalive lets it complete even
-    // if the page navigates away right after submit.
     return fetch(WEB_APP_URL, {
       method:  'POST',
       mode:    'no-cors',
@@ -474,9 +407,17 @@
     });
   }
 
+  function ensureName() {
+    if (fsUser) { ensurePill(); return Promise.resolve(fsUser.name); }
+    return ensureUser().then(function (u) { ensurePill(); return u.name; });
+  }
+
   function init() {
     injectStyles();
-    ensureName().then(syncStudent);
+    ensureUser().then(function (u) {
+      ensurePill();
+      syncStudent(u);
+    });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -486,8 +427,9 @@
 
   window.IELTSTracker = {
     getName:     readName,
+    getUser:     function () { return fsUser; },
     ensureName:  ensureName,
     sendResult:  sendResult,
-    changeName:  changeName
+    changeName:  goToAccount // backward compat — now opens the FS Account page
   };
 })();

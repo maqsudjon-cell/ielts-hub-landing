@@ -123,6 +123,9 @@
     '  transition:opacity 220ms ease,transform 220ms ease;',
     '}',
     '.ih-tracker-toast.is-shown{opacity:1;transform:translate(-50%,0);}',
+    '.ih-tracker-toast.is-share{pointer-events:auto;bottom:72px;}',
+    '.ih-tracker-toast.is-share a{color:#FF7A3D;font-weight:700;text-decoration:none;}',
+    '.ih-tracker-toast.is-share a:hover{color:#FF5A1F;text-decoration:underline;}',
     '.ih-tracker-toast .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,0.2);}',
     '.ih-tracker-toast.is-error .dot{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.2);}',
 
@@ -338,6 +341,27 @@
     } catch (e) {}
   }
 
+  /* one-tap share to Telegram — every shared result markets the site */
+  function shareToast(data) {
+    try {
+      var text = 'I scored ' + data.score + ' on \u201C' + data.test + '\u201D \uD83D\uDD38 Free IELTS practice: flarestamina.com';
+      var href = 'https://t.me/share/url?url=' + encodeURIComponent(location.href.split('#')[0]) +
+                 '&text=' + encodeURIComponent(text);
+      var el = document.createElement('div');
+      el.className = 'ih-tracker-toast is-share';
+      el.innerHTML = '<span class="dot"></span><span>\uD83D\uDCE4 <a target="_blank" rel="noopener"></a></span>';
+      var a = el.querySelector('a');
+      a.href = href;
+      a.textContent = 'Share your result';
+      document.body.appendChild(el);
+      requestAnimationFrame(function () { el.classList.add('is-shown'); });
+      setTimeout(function () {
+        el.classList.remove('is-shown');
+        setTimeout(function () { el.remove(); }, 240);
+      }, 12000);
+    } catch (e) {}
+  }
+
   function sendResult(testName, score) {
     var data = {
       name:  readName(),
@@ -389,6 +413,7 @@
 
     confetti();
     setTimeout(showFullMockPromo, 4000);
+    shareToast(data);
 
     // Show confirmation immediately — don't make the student wait on the network.
     toast('Result saved ✓', false);

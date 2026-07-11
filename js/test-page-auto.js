@@ -34,6 +34,7 @@
   }
   ensureScript(BASE + '/js/tracker.js');
   ensureScript(BASE + '/js/footer.js');
+  (function(){if(document.querySelector('script[data-goatcounter]'))return;var g=document.createElement('script');g.async=true;g.src='//gc.zgo.at/count.js';g.setAttribute('data-goatcounter','https://flarestamina.goatcounter.com/count');(document.head||document.documentElement).appendChild(g);})();
 
   // ─── 2. Title detection ───────────────────────────────────────
   function detectTitle() {

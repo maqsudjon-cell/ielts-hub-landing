@@ -417,6 +417,7 @@
 
     // Show confirmation immediately — don't make the student wait on the network.
     toast('Result saved ✓', false);
+    try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'event/result-saved', title: 'Result saved', event: true }); } catch (e) {}
 
     // IMPORTANT: mode 'no-cors' is required for Apps Script.
     // Apps Script answers a POST with a 302 redirect to googleusercontent.com,
